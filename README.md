@@ -1,5 +1,11 @@
 # Edge Qauto
 
+## Pre-requisites
+
+Install Java following the React Native guide: https://reactnative.dev/docs/set-up-your-environment?platform=android
+
+Install [Maestro](https://maestro.mobile.dev/getting-started/installing-maestro) and [Flashlight](https://docs.flashlight.dev/) to be able to run the test scripts. 
+
 ## Usage
 
 ### Install
