@@ -1,0 +1,101 @@
+#!/bin/zsh
+
+iterationCount=${1:-8}
+
+# Function to check if the script is being sourced
+if [ $ZSH_EVAL_CONTEXT = 'toplevel:file' ]; then
+  script_dir="${0:A:h}"
+  # Add script_dir to path only if it's not apart of path:
+  if [[ ":$PATH:" != *":$script_dir:"* ]]; then
+    PATH=$PATH:$script_dir
+    echo "Added qauto to PATH!\n"
+  fi
+
+  # reset all MAESTRO environment variables
+  unset MAESTRO_APP_ID
+  unset MAESTRO_PASSWORD
+  unset MAESTRO_CMD
+  unset MAESTRO_BEFORE_CMD
+  unset MAESURE_DURATION
+
+  echo "1: co.edgesecure.app"
+  echo "2: app.edge.develop\n"
+  echo -n "Choose app id: "
+  read choice
+  case $choice in
+    1)
+      export MAESTRO_APP_ID="co.edgesecure.app"
+      ;;
+    2)
+      export MAESTRO_APP_ID="app.edge.develop"
+      ;;
+    *)
+      echo "Invalid choice"
+      return 1
+      ;;
+  esac
+
+  echo "\n"
+  echo -n "Enter password for account: "
+  read -s password && echo ""
+  export MAESTRO_PASSWORD=$password
+
+  echo "\n"
+  echo "1: Idle Sync Perf"
+  echo "2: Idle Sync Perf (No Network)"
+  echo "3: Wallet Nav Perf (No Network)"
+  echo -n "Choose test: "
+  read choice
+  case $choice in
+    1)
+      export MAESTRO_CMD="maestro test performance/idle-sync.yaml"
+      export MAESURE_DURATION=60000 
+      ;;
+    2)
+      export MAESTRO_CMD="maestro test performance/idle-sync-no-network.yaml"
+      export MAESURE_DURATION=60000 
+      ;;
+    3)
+      export MAESTRO_BEFORE_CMD="maestro test performance/idle-sync-no-network.yaml"
+      export MAESTRO_CMD="maestro test performance/wallet-nav-no-network.yaml"
+      export MAESURE_DURATION=60000 
+      ;;
+    *)
+      echo "Invalid choice"
+      return 1
+      ;;
+  esac
+
+  return 0
+fi
+
+if [[ -z $MAESTRO_APP_ID || -z $MAESTRO_PASSWORD || -z $MAESTRO_CMD ]]; then
+  echo "Missing required environment variables. Run the following command to complete setup wizard:\n"
+  echo "source qauto"
+  return 1
+fi
+
+echo "Testing $MAESTRO_APP_ID"
+
+resultsFilePath="results/results-$(date +%s).json"
+mkdir -p results
+
+set -e
+cmd="flashlight test --bundleId '$MAESTRO_APP_ID' \
+  --testCommand '$MAESTRO_CMD' \
+  ${MAESTRO_BEFORE_CMD:+--beforeEachCommand '$MAESTRO_BEFORE_CMD'} \
+  ${MAESURE_DURATION:+--duration '$MAESURE_DURATION'} \
+  --resultsFilePath '$resultsFilePath' \
+  --iterationCount $iterationCount;"
+
+# echo $cmd
+eval $cmd
+
+set +e
+
+echo "\n"
+echo -n "Open results (y/N)? "
+read choice
+if [[ "${choice:l}" == "y" ]]; then
+  flashlight report $resultsFilePath
+fi

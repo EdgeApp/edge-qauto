@@ -1,0 +1,33 @@
+appId: ${MAESTRO_APP_ID}
+tags:
+  - all
+---
+- launchApp
+
+# Nav to password login
+# - runFlow:
+#     when:
+#       visible: Network request failed
+#     commands:
+#       - tapOn:
+#           point: '95%,7%'
+# - runFlow:
+#     when:
+#       visible: No Internet Connection
+#     commands:
+#       - tapOn:
+#           point: '95%,7%'
+- tapOn: 'Exit PIN'
+
+# Password login
+- assertVisible: 'edge-jared'
+- tapOn:
+    id: 'passwordFormField'
+- inputText: ${MAESTRO_PASSWORD}
+- pressKey: Enter
+
+- extendedWaitUntil:
+    visible: 'Assets'
+    timeout: 120000
+
+- tapOn: 'Assets'

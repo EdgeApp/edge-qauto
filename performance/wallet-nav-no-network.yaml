@@ -1,0 +1,10 @@
+appId: ${MAESTRO_APP_ID}
+tags:
+  - all
+---
+
+- repeat:
+    times: 5
+    commands:
+      - tapOn: 'BTC'
+      - tapOn: 'Assets'
