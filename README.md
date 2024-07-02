@@ -7,7 +7,7 @@
 Clone this repository and change into the directory:
 
 ```sh
-git clone git://github.com/edge/edge-qauto.git
+git clone git@github.com:EdgeApp/edge-qauto.git
 cd edge-qauto
 ```
 
