@@ -1,4 +1,4 @@
-# Edge QAuto
+# Edge Qauto
 
 ## Usage
 
@@ -51,4 +51,4 @@ flashlight report results/<filename>.json
 
 ## Pronunciation
 
-QAuto is pronounced as "Q Auto" or "QwAhToe" or "Kado".
+Qauto is pronounced "Kado".
