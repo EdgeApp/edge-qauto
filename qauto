@@ -91,6 +91,8 @@ cmd="flashlight test --bundleId '$MAESTRO_APP_ID' \
 # echo $cmd
 eval $cmd
 
+afplay /System/Library/Sounds/Submarine.aiff || echo "Failed to make a noise"
+
 set +e
 
 echo "\n"
