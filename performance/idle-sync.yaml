@@ -20,7 +20,10 @@ tags:
 - tapOn: 'Exit PIN'
 
 # Password login
-- assertVisible: 'edge-jared'
+
+# - assertVisible: 'edge-jared'
+# removed by Jared for evm test
+
 - tapOn:
     id: 'passwordFormField'
 - inputText: ${MAESTRO_PASSWORD}

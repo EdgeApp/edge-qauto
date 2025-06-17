@@ -3,8 +3,49 @@ tags:
   - all
 ---
 
+# - assertVisible: 'Send'
+# - assertVisible: 'Deposit'
+
+# - tapOn:
+#     text: "Assets"
+#     waitToSettleTimeoutMs: 10000 # ms
+
+# - extendedWaitUntil:
+#   visible: 'BTC' # or any other selector
+#   timeout: 5000
+
+# nav bar test
+- tapOn: 
+    text: 'Home'
+    index: 0
+- tapOn: 'Assets'
+- tapOn: 'Buy'
+- tapOn: 'Sell'
+- tapOn: 'Exchange'
+- tapOn: 
+    text: 'Home'
+    index: 0
+- tapOn: 'Assets'
+
+# original
 - repeat:
     times: 5
     commands:
       - tapOn: 'BTC'
+      - tapOn:
+          text: 'Received Bitcoin'
+          index: 0 # added
       - tapOn: 'Assets'
+
+# - tapOn: 'Assets'
+
+# new - Aug 14
+# - runFlow:
+  # - repeat:
+  #     times: 5
+  #     # runFlow:
+  #       when:
+  #         visible: 'BTC'
+  #       commands:
+  #          - tapOn: 'BTC'
+  #          - tapOn: 'Assets'
