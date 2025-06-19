@@ -19,6 +19,13 @@ tags:
 #           point: '95%,7%'
 - tapOn: 'Exit PIN'
 
+# Check and tap "Exit PIN" again if it's still visible due to "update edge" modal
+- runFlow:
+    when:
+      visible: 'Exit PIN'
+    commands:
+      - tapOn: 'Exit PIN'
+
 # Password login
 
 # - assertVisible: 'edge-jared'
