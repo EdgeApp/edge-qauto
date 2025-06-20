@@ -54,7 +54,22 @@ open the results again using:
 flashlight report results/<filename>.json
 ```
 
+### Python Script Requirements
+
+If you use `extract_flashlight_score.py` to extract scores from Flashlight results, you need Python 3 and Playwright:
+
+```sh
+pip install playwright
+python3 -m playwright install
+```
+
+This will install the Playwright Python package and the required browser binaries.
 
 ## Pronunciation
 
 Qauto is pronounced "Kado".
+
+## Utility Scripts
+
+- `extract_flashlight_score.py`: Extracts the average score from a Flashlight results JSON file by generating the HTML report and scraping the score from it.
+  - Usage: `python3 extract_flashlight_score.py <path-to-json>`

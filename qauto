@@ -1,6 +1,6 @@
 #!/bin/zsh
 
-iterationCount=${1:-1}
+iterationCount=${1:-8}
 
 # Function to check if the script is being sourced
 if [ $ZSH_EVAL_CONTEXT = 'toplevel:file' ]; then
