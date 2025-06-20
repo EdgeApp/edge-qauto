@@ -90,6 +90,7 @@ cmd="flashlight test --bundleId '$MAESTRO_APP_ID' \
   ${MAESTRO_BEFORE_CMD:+--beforeEachCommand '$MAESTRO_BEFORE_CMD'} \
   ${MAESURE_DURATION:+--duration '$MAESURE_DURATION'} \
   --resultsFilePath '$resultsFilePath' \
+  --resultsTitle '$resultsFilePath' \
   --iterationCount $iterationCount;"
 
 # echo $cmd
