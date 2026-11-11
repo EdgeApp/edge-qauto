@@ -7,20 +7,15 @@ tags:
 # Nav to password login
 - runFlow:
     when:
-      visible: Network request failed
+      notVisible: Alert
     commands:
-      - tapOn:
-          point: '95%,7%'
-- runFlow:
-    when:
-      visible: No Internet Connection
-    commands:
-      - tapOn:
-          point: '95%,7%'
-- tapOn: 'Exit PIN'
+       - tapOn: 'Exit PIN'
+
+
 
 # Password login
-- assertVisible: 'edge-jared'
+- assertVisible: 'Login'
+# - assertVisible: 'perf'
 - tapOn:
     id: 'passwordFormField'
 - inputText: ${MAESTRO_PASSWORD}
@@ -31,3 +26,6 @@ tags:
     timeout: 120000
 
 - tapOn: 'Assets'
+
+# onFlowComplete:
+#   - shell: afplay /System/Library/Sounds/Submarine.aiff

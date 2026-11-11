@@ -77,7 +77,11 @@ fi
 
 echo "Testing $MAESTRO_APP_ID"
 
-resultsFilePath="results/results-$(date +%s).json"
+# Extract test type from MAESTRO_CMD (e.g., idle-sync, idle-sync-no-network, wallet-nav-no-network)
+test_type="$(echo $MAESTRO_CMD | grep -oE 'performance/[^ ]+\.yaml' | sed -E 's/performance\/(.*)\.yaml/\1/')"
+# Convert dashes to spaces and capitalize each word
+test_type_formatted=$(echo "$test_type" | sed 's/-/ /g' | awk '{for(i=1;i<=NF;i++){$i=toupper(substr($i,1,1)) substr($i,2)}}1')
+resultsFilePath="results/${test_type_formatted}-$(date +%Y-%m-%d_%H-%M-%S).json"
 mkdir -p results
 
 set -e
@@ -86,6 +90,7 @@ cmd="flashlight test --bundleId '$MAESTRO_APP_ID' \
   ${MAESTRO_BEFORE_CMD:+--beforeEachCommand '$MAESTRO_BEFORE_CMD'} \
   ${MAESURE_DURATION:+--duration '$MAESURE_DURATION'} \
   --resultsFilePath '$resultsFilePath' \
+  --resultsTitle '$resultsFilePath' \
   --iterationCount $iterationCount;"
 
 # echo $cmd

@@ -45,6 +45,22 @@ a number to the `qauto` command:
 qauto 3
 ```
 
+### iOS Simulator Metrics
+
+On macOS, `qauto-ios` records an Instruments Time Profiler trace while running
+the selected Maestro flow on a booted iOS Simulator. It requires Xcode,
+Maestro, and a booted simulator.
+
+Configure the test as usual, then run:
+
+```sh
+source qauto
+./qauto-ios
+```
+
+By default, the first booted simulator is used. Set `IOS_SIM_UDID` to target a
+specific booted simulator. Traces and metadata are written to `results-ios/`.
+
 ### Re-opening Results
 
 The results are saved to the `results/` directory as a JSON file. You can always
@@ -54,7 +70,22 @@ open the results again using:
 flashlight report results/<filename>.json
 ```
 
+### Python Script Requirements
+
+If you use `extract_flashlight_score.py` to extract scores from Flashlight results, you need Python 3 and Playwright:
+
+```sh
+pip install playwright
+python3 -m playwright install
+```
+
+This will install the Playwright Python package and the required browser binaries.
 
 ## Pronunciation
 
 Qauto is pronounced "Kado".
+
+## Utility Scripts
+
+- `extract_flashlight_score.py`: Extracts the average score from a Flashlight results JSON file by generating the HTML report and scraping the score from it.
+  - Usage: `python3 extract_flashlight_score.py <path-to-json>`
