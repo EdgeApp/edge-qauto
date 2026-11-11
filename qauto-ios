@@ -1,0 +1,168 @@
+#!/usr/bin/env bash
+
+# Record an Instruments Time Profiler trace while a Maestro flow runs on an
+# iOS Simulator. Run `source qauto` first to configure the Maestro environment.
+
+set -euo pipefail
+
+if [[ -z "${MAESTRO_APP_ID:-}" || -z "${MAESTRO_PASSWORD:-}" || -z "${MAESTRO_CMD:-}" ]]; then
+  printf '%s\n' \
+    "Missing required environment variables." \
+    "Run 'source qauto' to complete the setup wizard, then retry."
+  exit 1
+fi
+
+for command_name in xcrun maestro; do
+  if ! command -v "$command_name" >/dev/null 2>&1; then
+    echo "$command_name is required but was not found in PATH."
+    exit 1
+  fi
+done
+
+if ! xcrun xctrace version >/dev/null 2>&1; then
+  echo "xctrace is unavailable. Install Xcode and select it with xcode-select."
+  exit 1
+fi
+
+duration_ms="${MAESURE_DURATION:-60000}"
+if ! [[ "$duration_ms" =~ ^[0-9]+$ ]]; then
+  echo "MAESURE_DURATION must be an integer number of milliseconds."
+  exit 1
+fi
+
+udid="${IOS_SIM_UDID:-}"
+if [[ -z "$udid" ]]; then
+  udid="$(
+    xcrun simctl list devices booted |
+      grep -Eo '[0-9A-Fa-f]{8}(-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}' |
+      head -n 1 || true
+  )"
+fi
+
+booted_devices="$(xcrun simctl list devices booted)"
+if [[ -z "$udid" ]] || ! grep -Fq "$udid" <<<"$booted_devices"; then
+  echo "No matching booted iOS Simulator was found."
+  echo "Boot one in Simulator.app or set IOS_SIM_UDID to a booted simulator UDID."
+  exit 1
+fi
+
+sim_name="$(xcrun simctl getenv "$udid" SIMULATOR_DEVICE_NAME)"
+runtime_info="$(xcrun simctl getenv "$udid" SIMULATOR_RUNTIME_VERSION)"
+
+flow_file="$(
+  printf '%s\n' "$MAESTRO_CMD" |
+    grep -Eo 'performance/[^[:space:]]+\.yaml' |
+    head -n 1 || true
+)"
+if [[ -z "$flow_file" || ! -f "$flow_file" ]]; then
+  echo "Could not resolve a performance YAML file from MAESTRO_CMD: $MAESTRO_CMD"
+  exit 1
+fi
+
+test_type="$(basename "$flow_file" .yaml)"
+test_type_formatted="$(
+  printf '%s\n' "$test_type" |
+    tr '-' ' ' |
+    awk '{for (i=1; i<=NF; i++) $i=toupper(substr($i,1,1)) substr($i,2)} 1'
+)"
+timestamp="$(date +%Y-%m-%d_%H-%M-%S)"
+results_dir="results-ios"
+mkdir -p "$results_dir"
+
+result_prefix="${results_dir}/${test_type_formatted}-${timestamp}"
+trace_path="${result_prefix}.trace"
+trace_export_xml="${result_prefix}.trace.xml"
+device_info_json="${result_prefix}.device.json"
+
+buffer_ms=15000
+time_limit_sec=$(((duration_ms + buffer_ms + 999) / 1000))
+if ((time_limit_sec < 30)); then
+  time_limit_sec=30
+fi
+
+run_maestro_command() {
+  local command_text="$1"
+  local -a command_parts
+  read -r -a command_parts <<<"$command_text"
+  "${command_parts[@]}" --device "$udid"
+}
+
+stop_trace() {
+  if [[ -n "${trace_pid:-}" ]]; then
+    if kill -0 "$trace_pid" >/dev/null 2>&1; then
+      kill -INT "$trace_pid" >/dev/null 2>&1 || true
+    fi
+    wait "$trace_pid" 2>/dev/null || true
+  fi
+}
+trap stop_trace EXIT INT TERM
+
+echo "Using simulator: $sim_name (iOS $runtime_info) [$udid]"
+echo "Bundle: $MAESTRO_APP_ID"
+echo "Test: $test_type_formatted"
+echo "Trace time limit: ${time_limit_sec}s"
+
+if [[ -n "${MAESTRO_BEFORE_CMD:-}" ]]; then
+  echo "Running pre-test flow..."
+  run_maestro_command "$MAESTRO_BEFORE_CMD"
+fi
+
+echo "Recording xctrace while running the Maestro test..."
+xcrun xctrace record \
+  --template "Time Profiler" \
+  --device "$udid" \
+  --time-limit "${time_limit_sec}s" \
+  --all-processes \
+  --output "$trace_path" \
+  --no-prompt \
+  --quiet &
+trace_pid=$!
+
+# Give xctrace time to initialize and fail before starting the measured flow.
+sleep 2
+if ! kill -0 "$trace_pid" >/dev/null 2>&1; then
+  wait "$trace_pid"
+fi
+
+set +e
+run_maestro_command "$MAESTRO_CMD"
+maestro_status=$?
+set -e
+
+stop_trace
+trap - EXIT INT TERM
+
+if ((maestro_status != 0)); then
+  echo "Maestro test failed with status $maestro_status."
+  exit "$maestro_status"
+fi
+
+echo "Exporting the trace table of contents to XML..."
+if ! xcrun xctrace export \
+  --input "$trace_path" \
+  --toc \
+  --output "$trace_export_xml" \
+  --quiet; then
+  echo "Warning: trace XML export failed; the Instruments trace is still available."
+  rm -f "$trace_export_xml"
+fi
+
+cat >"$device_info_json" <<EOF
+{
+  "bundleId": "${MAESTRO_APP_ID}",
+  "simulatorName": "${sim_name}",
+  "runtime": "${runtime_info}",
+  "udid": "${udid}",
+  "testYaml": "${flow_file}",
+  "tracePath": "${trace_path}",
+  "traceXml": "${trace_export_xml}",
+  "durationMs": ${duration_ms}
+}
+EOF
+
+printf '\nSaved:\n  %s\n' "$trace_path"
+if [[ -f "$trace_export_xml" ]]; then
+  printf '  %s\n' "$trace_export_xml"
+fi
+printf '  %s\n\n' "$device_info_json"
+echo "Open the trace in Instruments with: open '$trace_path'"

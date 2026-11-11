@@ -45,6 +45,22 @@ a number to the `qauto` command:
 qauto 3
 ```
 
+### iOS Simulator Metrics
+
+On macOS, `qauto-ios` records an Instruments Time Profiler trace while running
+the selected Maestro flow on a booted iOS Simulator. It requires Xcode,
+Maestro, and a booted simulator.
+
+Configure the test as usual, then run:
+
+```sh
+source qauto
+./qauto-ios
+```
+
+By default, the first booted simulator is used. Set `IOS_SIM_UDID` to target a
+specific booted simulator. Traces and metadata are written to `results-ios/`.
+
 ### Re-opening Results
 
 The results are saved to the `results/` directory as a JSON file. You can always
