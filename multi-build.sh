@@ -2,7 +2,7 @@
 setopt null_glob
 
 # Set iteration count
-iterationCount=1
+iterationCount=8
 
 # Prepare test type for folder name: convert dashes to spaces and capitalize each word
 raw_test_type="$(echo $MAESTRO_CMD | grep -oE 'performance/[^ ]+\.yaml' | sed -E 's/performance\/(.*)\.yaml/\1/')"
@@ -23,6 +23,7 @@ if [[ ${#build_files[@]} -eq 0 ]]; then
   exit 1
 fi
 
+# Iterate over each build file in builds-stagelist
 for build_file in "${build_files[@]}"; do
   if [[ ! -f "$build_file" ]]; then
     echo "No files found in builds-stagelist/"
@@ -31,15 +32,15 @@ for build_file in "${build_files[@]}"; do
   # Extract base name without extension, keep spaces
   build_name=$(basename "$build_file")
   build_name_noext="${build_name%.*}"
-  # Remove 'App ' prefix if present
-  build_name_noapp=$(echo "$build_name_noext" | sed 's/^App //')
+  # Remove 'App ' prefix if present (no longer needed)
+  # build_name_noapp=$(echo "$build_name_noext" | sed 's/^App //')
   echo "\nInstalling $build_name_noext..."
   if ! adb install -r "$build_file"; then
     echo "Warning: Failed to install $build_name_noext, skipping tests for this build"
     continue
   fi
 
-  resultsFilePath="${series_folder}/${build_name_noapp}.json"
+  resultsFilePath="${series_folder}/${build_name_noext}.json"
 
   echo "Running test $raw_test_type on $build_name_noext..."
   set -e
@@ -48,22 +49,24 @@ for build_file in "${build_files[@]}"; do
     ${MAESTRO_BEFORE_CMD:+--beforeEachCommand '$MAESTRO_BEFORE_CMD'} \
     ${MAESURE_DURATION:+--duration '$MAESURE_DURATION'} \
     --resultsFilePath '$resultsFilePath' \
-    --resultsTitle '$test_type_folder_capitalized $build_name_noapp' \
+    --resultsTitle '$test_type_folder_capitalized $build_name_noext' \
     --iterationCount '$iterationCount';"
   eval $cmd
   set +e
   # echo "Results saved to $resultsFilePath" # redundant
 
   # Generate HTML report and extract score
-  flashlight report "$resultsFilePath"
+  # removed to avoid "focus stealing" when opened
+  # flashlight report "$resultsFilePath"
 
-  # Extract score using the Python script
+  # Extract score using the Python script or Node.js one-liner
   if [[ -f "$resultsFilePath" ]]; then
     score=$(python3 extract_flashlight_score.py "$resultsFilePath" | grep -oE '[0-9]+')
+
     if [[ -n "$score" ]]; then
       echo "Extracted score: $score"
-      build_number=$(echo "$build_name_noapp" | grep -oE '[0-9]+$')
-      new_json_path="${series_folder}/Score ${score} - ${build_name_noapp}.json"
+      build_number=$(echo "$build_name_noext" | grep -oE '[0-9]+$')
+      new_json_path="${series_folder}/${build_name_noext} - Score ${score}.json"
       mv "$resultsFilePath" "$new_json_path"
       echo "Renamed JSON results to $new_json_path"
     else
